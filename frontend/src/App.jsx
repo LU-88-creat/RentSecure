@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from "react";
-import "./App.css";
+import Lease from "./Lease";
 
 function App() {
   const [results, setResults] = useState({
@@ -57,24 +57,38 @@ function App() {
   }, []);
 
   return (
-    <main className="connection-page">
-      <h1>RentSecure</h1>
-      <p>Secure Rental Management System</p>
+    <main className="min-h-screen bg-gray-50">
+      <header className="border-b border-gray-200 bg-white px-4 py-3 md:px-6">
+        <div className="mx-auto max-w-7xl">
+          <h1 className="text-xl font-bold text-orange-600">
+            RentSecure
+          </h1>
+          <p className="text-sm text-gray-500">
+            Secure Rental Management System
+          </p>
+        </div>
+      </header>
 
-      <section className="connection-card">
-        <h2>System Connection Test</h2>
+      <section className="mx-auto max-w-7xl px-4 py-6 md:px-6">
+        <details className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
+          <summary className="cursor-pointer font-semibold text-gray-700">
+            System Connection Status
+          </summary>
 
-        <p>
-          <strong>React frontend:</strong> Running
-        </p>
+          <div className="mt-3 space-y-2 text-sm">
+            <p>
+              <strong>React frontend:</strong> Running
+            </p>
+            <p>
+              <strong>Express backend:</strong> {results.backend}
+            </p>
+            <p>
+              <strong>MySQL database:</strong> {results.database}
+            </p>
+          </div>
+        </details>
 
-        <p>
-          <strong>Express backend:</strong> {results.backend}
-        </p>
-
-        <p>
-          <strong>MySQL database:</strong> {results.database}
-        </p>
+        <Lease />
       </section>
     </main>
   );

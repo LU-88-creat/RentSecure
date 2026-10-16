@@ -3,7 +3,11 @@ import cors from "cors";
 import dotenv from "dotenv";
 import db from "./config/db.js";
 import userRoutes from "./routes/userRoutes.js";
-
+import { authenticateToken } from "./middleware/authMiddleware.js";
+import propertyRoutes from "./routes/propertyRoutes.js";
+import unitRoutes from "./routes/unitRoutes.js";
+import tenantRoutes from "./routes/tenantRoutes.js";
+import leaseRoutes from "./routes/leaseRoutes.js";
 
 dotenv.config();
 
@@ -17,7 +21,10 @@ app.use(express.json());
 
 
 app.use("/api/users", userRoutes);
-
+app.use("/api/properties", propertyRoutes);
+app.use("/api/units", unitRoutes);
+app.use("/api/tenants", tenantRoutes);
+app.use("/api/leases", leaseRoutes);
 
 // Test the API server
 app.get("/api/health", (req, res) => {
@@ -73,6 +80,28 @@ app.get("/api/schema-test", async (req, res) => {
 });
 
 
-app.listen(PORT, () => {
-  console.log(`RentSecure backend running on port ${PORT}`);
+app.get("/api/users/me", authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    message: "Authentication successful.",
+    user: req.user,
+  });
 });
+
+
+
+async function startServer() {
+  try {
+    const [rows] = await db.query("SELECT DATABASE() AS databaseName");
+    console.log(`Connected to MySQL database "${rows[0].databaseName}"`);
+
+    app.listen(PORT, () => {
+      console.log(`RentSecure backend running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("Database connection failed:", error.message);
+    process.exitCode = 1;
+  }
+}
+
+startServer();

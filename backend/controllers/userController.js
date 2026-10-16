@@ -4,6 +4,7 @@ import {
   findUserByEmail,
   createUser,
 } from "../models/userModel.js";
+import jwt from "jsonwebtoken";
 
 export async function registerUser(req, res) {
   try {
@@ -86,3 +87,87 @@ export async function registerUser(req, res) {
     });
   }
 }
+
+
+export async function loginUser(req, res) {
+  try {
+    const { email, password } = req.body;
+
+    if (
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      !password
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required.",
+      });
+    }
+
+    if (!process.env.JWT_SECRET) {
+      console.error("JWT_SECRET is not configured.");
+
+      return res.status(500).json({
+        success: false,
+        message: "Authentication is not configured.",
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await findUserByEmail(normalizedEmail);
+
+    // Use a generic error so the response doesn't reveal
+    // whether a particular email has an account.
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password.",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      {
+        subject: String(user.id),
+        expiresIn: "1h",
+      }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "Login successful.",
+      token,
+      user: {
+        id: user.id,
+        full_name: user.full_name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+      },
+    });
+  } catch (error) {
+    console.error("Login failed:", error.message);
+
+    return res.status(500).json({
+      success: false,
+      message: "Login failed due to a server error.",
+    });
+  }
+}
+
