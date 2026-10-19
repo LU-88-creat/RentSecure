@@ -335,12 +335,22 @@ export async function removeLease(req, res) {
       success: true,
       message: "Lease deleted successfully.",
     });
-  } catch (error) {
-    console.error("Delete lease failed:", error.message);
+  
+} catch (error) {
+  console.error("Delete lease failed:", error.message);
 
-    return res.status(500).json({
+  if (error.code === "ACTIVE_LEASE_DELETE_BLOCKED") {
+    return res.status(409).json({
       success: false,
-      message: "Failed to delete lease.",
+      message:
+        "Active leases cannot be deleted. End or terminate the lease first.",
     });
   }
+
+  return res.status(500).json({
+    success: false,
+    message: "Failed to delete lease.",
+  });
+}
+
 }

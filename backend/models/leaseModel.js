@@ -670,7 +670,7 @@ export async function deleteLease(id, owner_id) {
 
     // Locate the lease and verify landlord ownership.
     const [leases] = await connection.execute(
-      `SELECT l.id, l.unit_id
+      `SELECT l.id, l.unit_id, l.status
        FROM leases l
        INNER JOIN units u ON u.id = l.unit_id
        INNER JOIN properties p ON p.id = u.property_id
@@ -688,6 +688,16 @@ export async function deleteLease(id, owner_id) {
     }
 
     const lease = leases[0];
+    if (lease.status === "active") {
+      await connection.rollback();
+
+      const error = new Error(
+      "Active leases cannot be deleted. End or terminate the lease first."
+     );
+
+      error.code = "ACTIVE_LEASE_DELETE_BLOCKED";
+      throw error;
+    }
 
     // Lock the unit to coordinate with lease creation and updates.
     const unit = await lockUnit(connection, lease.unit_id);

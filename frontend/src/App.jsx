@@ -1,9 +1,19 @@
 
 import { useEffect, useState } from "react";
+import Login from "./Login";
 import Lease from "./Lease";
+import CreateLease from "./CreateLease";
+import LeaseDetails from "./LeaseDetails";
+import EditLease from "./EditLease";
 
-function App() {
-  const [results, setResults] = useState({
+export default function App() {
+  const [token, setToken] = useState("");
+  const [user, setUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState("leases");
+  const [selectedLeaseId, setSelectedLeaseId] = useState(null);
+  const [editingLeaseId, setEditingLeaseId] = useState(null);
+
+  const [connection, setConnection] = useState({
     backend: "Checking...",
     database: "Checking...",
   });
@@ -11,87 +21,146 @@ function App() {
   useEffect(() => {
     async function checkConnections() {
       try {
-        const response = await fetch("/api/health");
+        const healthResponse = await fetch(
+          "http://localhost:5000/api/health"
+        );
 
-        if (!response.ok) {
-          throw new Error("Backend request failed");
-        }
-
-        const data = await response.json();
-
-        setResults((previous) => ({
+        setConnection((previous) => ({
           ...previous,
-          backend: data.message || "Backend connected",
+          backend: healthResponse.ok ? "Connected" : "Backend error",
+        }));
+
+        const dbResponse = await fetch(
+          "http://localhost:5000/api/db-test"
+        );
+        const dbData = await dbResponse.json();
+
+        setConnection((previous) => ({
+          ...previous,
+          database: dbResponse.ok
+            ? `Connected — ${
+                dbData.database ||
+                dbData.databaseName ||
+                "MySQL"
+              }`
+            : "Database error",
         }));
       } catch {
-        setResults((previous) => ({
-          ...previous,
-          backend: "Connection failed",
-        }));
-      }
-
-      try {
-        const response = await fetch("/api/db-test");
-
-        if (!response.ok) {
-          throw new Error("Database test failed");
-        }
-
-        const data = await response.json();
-
-        setResults((previous) => ({
-          ...previous,
-          database: data.success
-            ? `${data.database} — MySQL ${data.mysqlVersion}`
-            : "Database connection failed",
-        }));
-      } catch {
-        setResults((previous) => ({
-          ...previous,
-          database: "Connection failed",
-        }));
+        setConnection({
+          backend: "Not connected",
+          database: "Not connected",
+        });
       }
     }
 
     checkConnections();
   }, []);
 
+  function handleLoginSuccess(receivedToken, receivedUser) {
+    setToken(receivedToken);
+    setUser(receivedUser);
+    setCurrentPage("leases");
+    setSelectedLeaseId(null);
+  }
+
+  function handleLogout() {
+    setToken("");
+    setUser(null);
+    setCurrentPage("leases");
+    setSelectedLeaseId(null);
+  }
+
+  function handleViewLease(leaseId) {
+    setSelectedLeaseId(leaseId);
+    setCurrentPage("lease-details");
+  }
+
+  function handleBackToLeases() {
+    setSelectedLeaseId(null);
+    setCurrentPage("leases");
+  }
+
+  const handleEditLease = (leaseId) => {
+    setEditingLeaseId(leaseId);
+    setCurrentPage("edit-lease");
+  };
+
+  const handleBackToLeaseDetails = () => {
+    setEditingLeaseId(null);
+    setCurrentPage("lease-details");
+  };
+
+  if (!token || !user) {
+    return (
+      <>
+        <Login onLoginSuccess={handleLoginSuccess} />
+
+        <div className="border-t bg-white px-4 py-3 text-center text-xs text-slate-500">
+          Backend: {connection.backend} | MySQL: {connection.database}
+        </div>
+      </>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-gray-50">
-      <header className="border-b border-gray-200 bg-white px-4 py-3 md:px-6">
-        <div className="mx-auto max-w-7xl">
-          <h1 className="text-xl font-bold text-orange-600">
+    <div className="min-h-screen bg-slate-100">
+      <header className="flex flex-wrap items-center justify-between gap-3 bg-white px-6 py-4 shadow-sm">
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">
             RentSecure
           </h1>
-          <p className="text-sm text-gray-500">
-            Secure Rental Management System
+          <p className="text-sm text-slate-500">
+            Welcome, {user.full_name || user.email}
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+        >
+          Sign Out
+        </button>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-6 md:px-6">
-        <details className="mb-6 rounded-lg border border-gray-200 bg-white p-4">
-          <summary className="cursor-pointer font-semibold text-gray-700">
-            System Connection Status
-          </summary>
+      <main className="p-2 md:p-4">
+        {currentPage === "create-lease" ? (
+          <CreateLease
+            token={token}
+            onBack={handleBackToLeases}
+            onCreated={handleBackToLeases}
+          />
+        ) : currentPage === "edit-lease" && editingLeaseId ? (
+          <EditLease
+            token={token}
+            leaseId={editingLeaseId}
+            onBack={handleBackToLeaseDetails}
+            onUpdated={handleBackToLeaseDetails}
+          />
+        ) : currentPage === "lease-details" && selectedLeaseId ? (
+          <LeaseDetails
+            token={token}
+            leaseId={selectedLeaseId}
+            onBack={handleBackToLeases}
+            onEditLease={handleEditLease}
+          />
+          
+        ) : currentPage === "edit-lease" && editingLeaseId ? (
+          <EditLease
+            token={token}
+            leaseId={editingLeaseId}
+            onBack={handleBackToLeaseDetails}
+            onUpdated={() => setCurrentPage("lease-details")}
+          />
 
-          <div className="mt-3 space-y-2 text-sm">
-            <p>
-              <strong>React frontend:</strong> Running
-            </p>
-            <p>
-              <strong>Express backend:</strong> {results.backend}
-            </p>
-            <p>
-              <strong>MySQL database:</strong> {results.database}
-            </p>
-          </div>
-        </details>
-
-        <Lease />
-      </section>
-    </main>
+        ) : (
+          <Lease
+            token={token}
+            onCreateLease={() => setCurrentPage("create-lease")}
+            onViewLease={handleViewLease}
+          />
+        )}
+      </main>
+    </div>
   );
 }
-
-export default App;
