@@ -159,6 +159,18 @@ export default function Lease({ token, onCreateLease, onViewLease }) {  const [s
     return styles[status] || "bg-gray-100 text-gray-700";
   }
 
+  
+function unitStatusStyle(status) {
+  const styles = {
+    available: "bg-blue-100 text-blue-800",
+    occupied: "bg-green-100 text-green-800",
+    maintenance: "bg-orange-100 text-orange-800",
+  };
+
+  return styles[status] || "bg-gray-100 text-gray-700";
+}
+
+
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Page heading */}
@@ -271,8 +283,10 @@ export default function Lease({ token, onCreateLease, onViewLease }) {  const [s
                 <th className="px-5 py-3 font-medium">Tenant</th>
                 <th className="px-5 py-3 font-medium">Monthly Rent</th>
                 <th className="px-5 py-3 font-medium">Lease Period</th>
-                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">Lease Status</th>
+                <th className="px-5 py-3 font-medium">Unit Status</th>
                 <th className="px-5 py-3 font-medium">Actions</th>
+
               </tr>
             </thead>
 
@@ -280,7 +294,7 @@ export default function Lease({ token, onCreateLease, onViewLease }) {  const [s
               {loading && leases.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-5 py-12 text-center text-gray-500"
                   >
                     Loading lease records...
@@ -289,7 +303,7 @@ export default function Lease({ token, onCreateLease, onViewLease }) {  const [s
               ) : !error && filteredLeases.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-5 py-12 text-center text-gray-500"
                   >
                     {leases.length === 0
@@ -350,6 +364,19 @@ export default function Lease({ token, onCreateLease, onViewLease }) {  const [s
                         {lease.status || "Unknown"}
                       </span>
                     </td>
+
+                    
+                    {/* Unit status badge */}
+                    <td className="px-5 py-4">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold capitalize ${unitStatusStyle(
+                          lease.unit_status
+                       )}`}
+                      >
+                        {lease.unit_status || "Unknown"}
+                      </span>
+                    </td>
+
 
                     {/* View lease details */}
                     <td className="px-5 py-4">

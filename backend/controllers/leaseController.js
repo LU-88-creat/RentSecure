@@ -302,6 +302,23 @@ export async function editLease(req, res) {
       });
     }
 
+    
+    if (error.code === "INVALID_LEASE_STATUS") {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    
+    if (error.code === "INVALID_LEASE_TRANSITION") {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+
     return res.status(500).json({
       success: false,
       message: "Failed to update lease.",

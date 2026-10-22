@@ -32,3 +32,17 @@ export async function createUser({
     phone: phone || null,
   };
 }
+
+
+export async function findUserById(id) {
+  const [rows] = await db.execute(
+    `SELECT id, full_name, email, role, phone, created_at
+     FROM users
+     WHERE id = ?
+     LIMIT 1`,
+    [id]
+  );
+
+  return rows[0] || null;
+}
+

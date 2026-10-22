@@ -6,6 +6,7 @@ import {
   updateTenant,
   deleteTenant,
 } from "../models/tenantModel.js";
+import { findUserById } from "../models/userModel.js";
 
 function isValidId(value) {
   return Number.isInteger(Number(value)) && Number(value) > 0;
@@ -59,6 +60,24 @@ export async function addTenant(req, res) {
         success: false,
         message: "Emergency contact must be text of at most 30 characters.",
       });
+    }
+    
+    if (user_id !== undefined && user_id !== null && user_id !== "") {
+      const linkedUser = await findUserById(Number(user_id));
+
+      if (!linkedUser) {
+        return res.status(400).json({
+          success: false,
+          message: "The supplied user ID does not exist.",
+        });
+      }
+
+      if (linkedUser.role !== "tenant") {
+        return res.status(400).json({
+          success: false,
+          message: "The linked account must have the tenant role.",
+        });
+      }
     }
 
     const tenant = await createTenant({
@@ -238,7 +257,10 @@ export async function removeTenant(req, res) {
       message: "Tenant record deleted successfully.",
     });
   } catch (error) {
-    if (error.code === "ER_ROW_IS_REFERENCED_2") {
+    if (
+      error.code === "ER_ROW_IS_REFERENCED_2" ||
+      error.code === "ER_ROW_IS_REFERENCED"
+      ) {
       return res.status(409).json({
         success: false,
         message: "This tenant is linked to a lease and cannot be deleted.",
